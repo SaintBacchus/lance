@@ -16,6 +16,7 @@ package com.lancedb.lance.spark.read;
 
 import com.lancedb.lance.spark.LanceConfig;
 import com.lancedb.lance.spark.internal.LanceDatasetAdapter;
+
 import org.apache.spark.sql.connector.read.Statistics;
 
 import java.util.OptionalLong;
