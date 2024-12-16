@@ -31,6 +31,7 @@ import org.apache.spark.sql.util.LanceArrowUtils;
 
 import java.time.ZoneId;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
 
 public class LanceDatasetAdapter {
@@ -63,6 +64,16 @@ public class LanceDatasetAdapter {
       return dataset.getFragments().stream()
           .map(DatasetFragment::getId)
           .collect(Collectors.toList());
+    }
+  }
+
+  public static OptionalLong getDatasetRowNums(LanceConfig config) {
+    String uri = config.getDatasetUri();
+    ReadOptions options = SparkOptions.genReadOptionFromConfig(config);
+    try (Dataset dataset = Dataset.open(allocator, uri, options)) {
+      return OptionalLong.of(dataset.countRows());
+    } catch (IllegalArgumentException e) {
+      return OptionalLong.empty();
     }
   }
 

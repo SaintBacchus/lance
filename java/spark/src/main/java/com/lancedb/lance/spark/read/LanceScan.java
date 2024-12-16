@@ -23,7 +23,8 @@ import org.apache.spark.sql.connector.read.Batch;
 import org.apache.spark.sql.connector.read.InputPartition;
 import org.apache.spark.sql.connector.read.PartitionReader;
 import org.apache.spark.sql.connector.read.PartitionReaderFactory;
-import org.apache.spark.sql.connector.read.Scan;
+import org.apache.spark.sql.connector.read.Statistics;
+import org.apache.spark.sql.connector.read.SupportsReportStatistics;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.sql.vectorized.ColumnarBatch;
 
@@ -31,16 +32,16 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.stream.IntStream;
 
-public class LanceScan implements Batch, Scan, Serializable {
+public class LanceScan implements Batch, SupportsReportStatistics, Serializable {
   private static final long serialVersionUID = 947284762748623947L;
 
   private final StructType schema;
-  private final LanceConfig options;
+  private final LanceConfig config;
   private final Optional<String> whereConditions;
 
-  public LanceScan(StructType schema, LanceConfig options, Optional<String> whereConditions) {
+  public LanceScan(StructType schema, LanceConfig config, Optional<String> whereConditions) {
     this.schema = schema;
-    this.options = options;
+    this.config = config;
     this.whereConditions = whereConditions;
   }
 
@@ -51,9 +52,9 @@ public class LanceScan implements Batch, Scan, Serializable {
 
   @Override
   public InputPartition[] planInputPartitions() {
-    List<LanceSplit> splits = LanceSplit.generateLanceSplits(options);
+    List<LanceSplit> splits = LanceSplit.generateLanceSplits(config);
     return IntStream.range(0, splits.size())
-        .mapToObj(i -> new LanceInputPartition(schema, i, splits.get(i), options, whereConditions))
+        .mapToObj(i -> new LanceInputPartition(schema, i, splits.get(i), config, whereConditions))
         .toArray(InputPartition[]::new);
   }
 
@@ -65,6 +66,11 @@ public class LanceScan implements Batch, Scan, Serializable {
   @Override
   public StructType readSchema() {
     return schema;
+  }
+
+  @Override
+  public Statistics estimateStatistics() {
+    return new LanceStatistics(this.config);
   }
 
   private class LanceReaderFactory implements PartitionReaderFactory {
